@@ -7,28 +7,35 @@
 
 echo "=== Instalando pv (simulated typing) ==="
 if ! command -v pv &> /dev/null; then
-    echo "pv não encontrado. Instalando..."
-    sudo apt-get update -qq && sudo apt-get install -y -qq pv
+    echo "pv não encontrado. Tentando instalar..."
+    # Azure Cloud Shell usa Azure Linux (tdnf)
+    if command -v tdnf &> /dev/null; then
+        sudo tdnf install -y pv 2>/dev/null
+    # Fallback Debian/Ubuntu
+    elif command -v apt-get &> /dev/null; then
+        sudo apt-get update -qq && sudo apt-get install -y -qq pv 2>/dev/null
+    fi
+
     if command -v pv &> /dev/null; then
-        echo "pv instalado com sucesso!"
+        echo "✅ pv instalado!"
     else
-        echo "AVISO: pv não pôde ser instalado. A demo vai rodar sem simulated typing."
+        echo "⚠ pv não pôde ser instalado. A demo roda sem simulated typing."
     fi
 else
-    echo "pv já instalado: $(pv --version 2>&1 | head -1)"
+    echo "✅ pv já instalado"
 fi
 
 echo ""
 echo "=== Baixando demo-magic ==="
 curl -s https://raw.githubusercontent.com/paxtonhare/demo-magic/master/demo-magic.sh -o demo-magic.sh
 chmod +x demo-magic.sh
-echo "demo-magic.sh baixado"
+echo "✅ demo-magic.sh baixado"
 
 echo ""
 echo "=== Instalando extensões Azure CLI ==="
 az extension add --name application-insights --yes --only-show-errors 2>/dev/null
 az extension add --name ml --yes --only-show-errors 2>/dev/null
-echo "Extensões instaladas"
+echo "✅ Extensões instaladas"
 
 echo ""
 echo "=== Verificando subscription ==="
