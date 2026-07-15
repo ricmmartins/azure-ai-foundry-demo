@@ -6,11 +6,24 @@
 # Cada passo espera ENTER para avançar
 ########################
 
-# Carregar demo-magic
+# Se pv não estiver instalado, desabilita simulated typing
+# (demo-magic checa TYPE_SPEED no source e aborta se pv não existe)
+HAS_PV=true
+if ! command -v pv &> /dev/null; then
+    echo "⚠ pv não encontrado. Rodando sem simulated typing."
+    echo "  Para ter typing simulado: ./setup.sh (instala pv)"
+    echo ""
+    HAS_PV=false
+fi
+
+# Carregar demo-magic (sem TYPE_SPEED para evitar check_pv)
+unset TYPE_SPEED
 . ./demo-magic.sh -n
 
-# Configuração
-TYPE_SPEED=40
+# Agora sim, configurar TYPE_SPEED se pv existe
+if [ "$HAS_PV" = true ]; then
+    TYPE_SPEED=40
+fi
 DEMO_PROMPT="${GREEN}azure-demo${COLOR_RESET} $ "
 
 # === Variáveis ===
