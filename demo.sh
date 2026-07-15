@@ -6,21 +6,18 @@
 # Cada passo espera ENTER para avançar
 ########################
 
-# Se pv não estiver instalado, desabilita simulated typing
-# (demo-magic checa TYPE_SPEED no source e aborta se pv não existe)
+# Detectar se pv existe
 HAS_PV=true
 if ! command -v pv &> /dev/null; then
-    echo "⚠ pv não encontrado. Rodando sem simulated typing."
-    echo "  Para ter typing simulado: ./setup.sh (instala pv)"
-    echo ""
     HAS_PV=false
 fi
 
-# Carregar demo-magic (sem TYPE_SPEED para evitar check_pv)
-unset TYPE_SPEED
-. ./demo-magic.sh -n
+# Carregar demo-magic
+# -d = desabilita TYPE_SPEED (bypass do check_pv)
+# -n = no wait automático (controlamos manualmente com wait)
+. ./demo-magic.sh -d -n
 
-# Agora sim, configurar TYPE_SPEED se pv existe
+# Se pv existe, reabilitar simulated typing
 if [ "$HAS_PV" = true ]; then
     TYPE_SPEED=40
 fi
