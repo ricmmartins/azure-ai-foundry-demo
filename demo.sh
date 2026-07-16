@@ -96,11 +96,33 @@ pe "HUB_RESOURCE_ID=\$(az ml workspace show --name $HUB_NAME --resource-group $R
 pe "az monitor diagnostic-settings create --name foundry-diagnostics --resource \$HUB_RESOURCE_ID --workspace \$LAW_ID --logs '[{\"categoryGroup\":\"allLogs\",\"enabled\":true}]' --metrics '[{\"category\":\"AllMetrics\",\"enabled\":true}]'"
 
 # ===================================
-# Passo 7: Listar serviços AI disponíveis
+# Passo 7: Aguardar AI Services (criado pelo Hub)
 # ===================================
-p "# === Passo 7: Listar AI Services do Hub ==="
+p "# === Passo 7: Aguardando AI Services ficar disponível ==="
 wait
 
+p "# O Hub cria o AI Services automaticamente, mas pode levar alguns minutos..."
+
+# Polling loop - espera até o AI Services existir no RG
+AI_SERVICES_NAME=""
+RETRIES=0
+MAX_RETRIES=30
+while [ -z "$AI_SERVICES_NAME" ] && [ $RETRIES -lt $MAX_RETRIES ]; do
+  AI_SERVICES_NAME=$(az cognitiveservices account list --resource-group $RG --subscription $SUB --query '[0].name' -o tsv 2>/dev/null)
+  if [ -z "$AI_SERVICES_NAME" ]; then
+    RETRIES=$((RETRIES + 1))
+    echo "  ⏳ Tentativa $RETRIES/$MAX_RETRIES - aguardando AI Services... (10s)"
+    sleep 10
+  fi
+done
+
+if [ -z "$AI_SERVICES_NAME" ]; then
+  echo "❌ AI Services não encontrado após ${MAX_RETRIES} tentativas."
+  echo "   Verifique se o Hub foi criado corretamente."
+  exit 1
+fi
+
+echo "✅ AI Services encontrado: $AI_SERVICES_NAME"
 pe "az cognitiveservices account list --resource-group $RG --subscription $SUB -o table"
 
 # ===================================
@@ -109,9 +131,7 @@ pe "az cognitiveservices account list --resource-group $RG --subscription $SUB -
 p "# === Passo 8: Deploy do GPT-4o ==="
 wait
 
-pe "AI_SERVICES_NAME=\$(az cognitiveservices account list --resource-group $RG --subscription $SUB --query '[0].name' -o tsv)"
-
-pe "az cognitiveservices account deployment create --name \$AI_SERVICES_NAME --resource-group $RG --subscription $SUB --deployment-name gpt-4o-global --model-name gpt-4o --model-version 2024-11-20 --model-format OpenAI --sku-capacity 80 --sku-name GlobalStandard"
+pe "az cognitiveservices account deployment create --name $AI_SERVICES_NAME --resource-group $RG --subscription $SUB --deployment-name gpt-4o-global --model-name gpt-4o --model-version 2024-11-20 --model-format OpenAI --sku-capacity 80 --sku-name GlobalStandard"
 
 # ===================================
 # Passo 9: Testar via REST
@@ -119,9 +139,9 @@ pe "az cognitiveservices account deployment create --name \$AI_SERVICES_NAME --r
 p "# === Passo 9: Testar o modelo via REST ==="
 wait
 
-pe "AI_ENDPOINT=\$(az cognitiveservices account show --name \$AI_SERVICES_NAME --resource-group $RG --subscription $SUB --query properties.endpoint -o tsv)"
+pe "AI_ENDPOINT=\$(az cognitiveservices account show --name $AI_SERVICES_NAME --resource-group $RG --subscription $SUB --query properties.endpoint -o tsv)"
 
-pe "AI_KEY=\$(az cognitiveservices account keys list --name \$AI_SERVICES_NAME --resource-group $RG --subscription $SUB --query key1 -o tsv)"
+pe "AI_KEY=\$(az cognitiveservices account keys list --name $AI_SERVICES_NAME --resource-group $RG --subscription $SUB --query key1 -o tsv)"
 
 p "# Enviando prompt de teste (cenário RH - triagem de currículo)..."
 wait
