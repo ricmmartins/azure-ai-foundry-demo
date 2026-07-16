@@ -59,7 +59,7 @@ pe "LAW_ID=\$(az monitor log-analytics workspace show --resource-group $RG --wor
 pe "az monitor app-insights component create --app $APP_INSIGHTS --location $LOCATION --resource-group $RG --subscription $SUB --workspace \$LAW_ID --kind web"
 
 # ===================================
-p "# Criando o AI Services — é o recurso que hospeda os modelos (GPT-4o, etc.)"
+p "# Criando o AI Services — é o recurso que hospeda os modelos (GPT-5, etc.)"
 wait
 
 pe "az cognitiveservices account create --name $AI_SERVICES --resource-group $RG --kind AIServices --sku-name S0 --location $LOCATION --subscription $SUB --yes"
@@ -93,11 +93,11 @@ pe "HUB_RESOURCE_ID=\$(az ml workspace show --name $HUB_NAME --resource-group $R
 pe "az monitor diagnostic-settings create --name foundry-diagnostics --resource \$HUB_RESOURCE_ID --workspace \$LAW_ID --logs '[{\"categoryGroup\":\"allLogs\",\"enabled\":true}]' --metrics '[{\"category\":\"AllMetrics\",\"enabled\":true}]'"
 
 # ===================================
-p "# Agora o deploy do GPT-4o — Global Standard, pay-per-token, 80K TPM"
+p "# Agora o deploy do GPT-5 mini — Global Standard, pay-per-token, 80K TPM"
 p "# Para produção, vocês migrariam para PTU (Provisioned)"
 wait
 
-pe "az cognitiveservices account deployment create --name $AI_SERVICES --resource-group $RG --subscription $SUB --deployment-name gpt-4o-global --model-name gpt-4o --model-version 2024-11-20 --model-format OpenAI --sku-capacity 80 --sku-name GlobalStandard"
+pe "az cognitiveservices account deployment create --name $AI_SERVICES --resource-group $RG --subscription $SUB --deployment-name gpt-5-mini-global --model-name gpt-5-mini --model-version 2025-08-07 --model-format OpenAI --sku-capacity 80 --sku-name GlobalStandard"
 
 # ===================================
 p "# Vamos testar! Chamada REST direto no modelo, cenário de triagem de currículo"
@@ -110,7 +110,7 @@ pe "AI_KEY=\$(az cognitiveservices account keys list --name $AI_SERVICES --resou
 p "# Enviando prompt de triagem..."
 wait
 
-pe "curl -s \"\${AI_ENDPOINT}openai/deployments/gpt-4o-global/chat/completions?api-version=2024-10-21\" -H \"Content-Type: application/json\" -H \"api-key: \$AI_KEY\" -d '{\"messages\":[{\"role\":\"system\",\"content\":\"Você é um assistente de RH especializado em triagem de currículos.\"},{\"role\":\"user\",\"content\":\"Analise este perfil: João Silva, 5 anos exp Python/Django, AWS, inglês fluente. A vaga pede: 3+ anos Python, cloud, inglês. Ele é aderente?\"}],\"max_tokens\":300}' | python3 -m json.tool"
+pe "curl -s \"\${AI_ENDPOINT}openai/deployments/gpt-5-mini-global/chat/completions?api-version=2024-10-21\" -H \"Content-Type: application/json\" -H \"api-key: \$AI_KEY\" -d '{\"messages\":[{\"role\":\"system\",\"content\":\"Você é um assistente de RH especializado em triagem de currículos.\"},{\"role\":\"user\",\"content\":\"Analise este perfil: João Silva, 5 anos exp Python/Django, AWS, inglês fluente. A vaga pede: 3+ anos Python, cloud, inglês. Ele é aderente?\"}],\"max_tokens\":300}' | python3 -m json.tool"
 
 # ===================================
 p "# Por último, consultando os logs via KQL — é isso que alimenta o monitoramento"

@@ -11,7 +11,7 @@ Demo-magic scripts for an Azure AI Foundry portal walkthrough. Provisions the fu
 | Application Insights | `appi-foundry-demo` | Request tracing, latency, errors |
 | AI Foundry Hub | `hub-demo-lg` | Infrastructure layer (RBAC, networking) |
 | AI Foundry Project | `demo-lg-hrtech` | Workspace for deployments and playground |
-| GPT-4o Deployment | `gpt-4o-global` | Global Standard, 80K TPM |
+| GPT-5 mini Deployment | `gpt-5-mini-global` | Global Standard, 80K TPM |
 | Diagnostic Settings | `foundry-diagnostics` | All logs + metrics to Log Analytics |
 
 ## Quick start
