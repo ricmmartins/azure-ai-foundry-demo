@@ -18,7 +18,18 @@ read -p "Confirmar? (y/N) " confirm
 
 if [[ "$confirm" =~ ^[Yy]$ ]]; then
     az group delete --name $RG --subscription $SUB --yes --no-wait
-    echo "Deleção iniciada (rodando em background)."
+    echo "✅ Deleção do RG iniciada (rodando em background)."
+
+    # Purgar AI Services soft-deleted para evitar erro FlagMustBeSetForRestore na próxima rodada
+    echo ""
+    echo "⏳ Aguardando RG ser deletado para purgar AI Services..."
+    echo "   (Se não quiser esperar, rode manualmente depois:)"
+    echo "   az cognitiveservices account purge --name ais-demo-lg --resource-group $RG --location eastus2"
+    echo ""
+    az group wait --name $RG --subscription $SUB --deleted 2>/dev/null
+    az cognitiveservices account purge --name ais-demo-lg --resource-group $RG --location eastus2 --subscription $SUB 2>/dev/null && echo "✅ AI Services purgado." || echo "⚠️ Purge falhou ou já purgado. OK."
+
+    echo ""
     echo "Verifique no portal: https://portal.azure.com"
 else
     echo "Cancelado."
