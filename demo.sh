@@ -36,6 +36,7 @@ HUB_NAME="hub-demo-lg"
 PROJECT_NAME="demo-lg-hrtech"
 LOG_ANALYTICS="law-foundry-demo"
 APP_INSIGHTS="appi-foundry-demo"
+AI_SERVICES="ais-demo-lg"
 
 clear
 
@@ -56,6 +57,12 @@ wait
 pe "LAW_ID=\$(az monitor log-analytics workspace show --resource-group $RG --workspace-name $LOG_ANALYTICS --subscription $SUB --query id -o tsv)"
 
 pe "az monitor app-insights component create --app $APP_INSIGHTS --location $LOCATION --resource-group $RG --subscription $SUB --workspace \$LAW_ID --kind web"
+
+# ===================================
+p "# Criando o AI Services — é o recurso que hospeda os modelos (GPT-4o, etc.)"
+wait
+
+pe "az cognitiveservices account create --name $AI_SERVICES --resource-group $RG --kind AIServices --sku-name S0 --location $LOCATION --subscription $SUB --yes"
 
 # ===================================
 p "# Criando o AI Foundry Hub — a camada de infraestrutura (RBAC, rede, Key Vault)"
@@ -86,44 +93,19 @@ pe "HUB_RESOURCE_ID=\$(az ml workspace show --name $HUB_NAME --resource-group $R
 pe "az monitor diagnostic-settings create --name foundry-diagnostics --resource \$HUB_RESOURCE_ID --workspace \$LAW_ID --logs '[{\"categoryGroup\":\"allLogs\",\"enabled\":true}]' --metrics '[{\"category\":\"AllMetrics\",\"enabled\":true}]'"
 
 # ===================================
-p "# O Hub cria um AI Services automaticamente. Vamos aguardar ele ficar disponível..."
-wait
-
-# Polling loop - espera até o AI Services existir no RG
-AI_SERVICES_NAME=""
-RETRIES=0
-MAX_RETRIES=30
-while [ -z "$AI_SERVICES_NAME" ] && [ $RETRIES -lt $MAX_RETRIES ]; do
-  AI_SERVICES_NAME=$(az cognitiveservices account list --resource-group $RG --subscription $SUB --query '[0].name' -o tsv 2>/dev/null)
-  if [ -z "$AI_SERVICES_NAME" ]; then
-    RETRIES=$((RETRIES + 1))
-    echo "  ⏳ Aguardando... ($RETRIES/$MAX_RETRIES)"
-    sleep 10
-  fi
-done
-
-if [ -z "$AI_SERVICES_NAME" ]; then
-  echo "❌ AI Services não encontrado. Verifique se o Hub foi criado corretamente."
-  exit 1
-fi
-
-echo "✅ AI Services pronto: $AI_SERVICES_NAME"
-pe "az cognitiveservices account list --resource-group $RG --subscription $SUB -o table"
-
-# ===================================
 p "# Agora o deploy do GPT-4o — Global Standard, pay-per-token, 80K TPM"
 p "# Para produção, vocês migrariam para PTU (Provisioned)"
 wait
 
-pe "az cognitiveservices account deployment create --name $AI_SERVICES_NAME --resource-group $RG --subscription $SUB --deployment-name gpt-4o-global --model-name gpt-4o --model-version 2024-11-20 --model-format OpenAI --sku-capacity 80 --sku-name GlobalStandard"
+pe "az cognitiveservices account deployment create --name $AI_SERVICES --resource-group $RG --subscription $SUB --deployment-name gpt-4o-global --model-name gpt-4o --model-version 2024-11-20 --model-format OpenAI --sku-capacity 80 --sku-name GlobalStandard"
 
 # ===================================
 p "# Vamos testar! Chamada REST direto no modelo, cenário de triagem de currículo"
 wait
 
-pe "AI_ENDPOINT=\$(az cognitiveservices account show --name $AI_SERVICES_NAME --resource-group $RG --subscription $SUB --query properties.endpoint -o tsv)"
+pe "AI_ENDPOINT=\$(az cognitiveservices account show --name $AI_SERVICES --resource-group $RG --subscription $SUB --query properties.endpoint -o tsv)"
 
-pe "AI_KEY=\$(az cognitiveservices account keys list --name $AI_SERVICES_NAME --resource-group $RG --subscription $SUB --query key1 -o tsv)"
+pe "AI_KEY=\$(az cognitiveservices account keys list --name $AI_SERVICES --resource-group $RG --subscription $SUB --query key1 -o tsv)"
 
 p "# Enviando prompt de triagem..."
 wait
