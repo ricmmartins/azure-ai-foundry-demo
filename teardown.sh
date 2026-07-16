@@ -4,7 +4,11 @@
 # Teardown: Limpar recursos da demo
 ########################
 
-SUB="313dd062-1c1c-428a-afc4-4e271378679f"
+SUB=$(az account show --query id -o tsv)
+if [ -z "$SUB" ]; then
+  echo "❌ Erro: subscription não detectada. Verifique se está logado."
+  exit 1
+fi
 RG="rg-foundry-demo"
 
 echo "=== Removendo Resource Group: $RG ==="

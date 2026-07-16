@@ -24,7 +24,12 @@ fi
 DEMO_PROMPT="${GREEN}azure-demo${COLOR_RESET} $ "
 
 # === Variáveis ===
-SUB="313dd062-1c1c-428a-afc4-4e271378679f"
+SUB=$(az account show --query id -o tsv)
+if [ -z "$SUB" ]; then
+  echo "❌ Erro: subscription não detectada. Rode 'az login' primeiro."
+  exit 1
+fi
+echo "✅ Subscription: $SUB"
 RG="rg-foundry-demo"
 LOCATION="eastus2"
 HUB_NAME="hub-demo-lg"

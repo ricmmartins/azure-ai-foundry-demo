@@ -39,7 +39,13 @@ echo "✅ Extensões instaladas"
 
 echo ""
 echo "=== Verificando subscription ==="
-az account set --subscription "313dd062-1c1c-428a-afc4-4e271378679f"
+SUB=$(az account show --query id -o tsv)
+if [ -z "$SUB" ]; then
+  echo "❌ Erro: não foi possível detectar a subscription. Verifique se está logado (az login)."
+  exit 1
+fi
+az account set --subscription "$SUB"
+echo "✅ Subscription ativa: $SUB"
 az account show --query "{name:name, id:id}" -o table
 
 echo ""

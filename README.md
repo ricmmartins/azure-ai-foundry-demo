@@ -44,8 +44,9 @@ Uses [demo-magic](https://github.com/paxtonhare/demo-magic) to simulate typing A
 
 ## Configuration
 
-Edit the variables at the top of `demo.sh` to change:
-- Subscription ID
+The scripts automatically detect the active subscription from your Azure Cloud Shell session (`az account show`). No manual subscription ID needed.
+
+To change other settings, edit the variables at the top of `demo.sh`:
 - Resource group name
 - Region (default: `eastus2`)
 - Hub/Project names
