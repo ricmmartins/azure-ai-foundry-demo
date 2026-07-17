@@ -65,6 +65,17 @@ wait
 pe "az cognitiveservices account create --name $AI_SERVICES --resource-group $RG --kind AIServices --sku-name S0 --location $LOCATION --subscription $SUB --custom-domain $AI_SERVICES --yes"
 
 # ===================================
+p "# Atribuindo RBAC — sem isso, Entra ID auth retorna PermissionDenied no teste REST"
+p "# O Hub desabilita API keys por padrão, então precisamos da role no AI Services"
+wait
+
+pe "AI_SERVICES_ID=\$(az cognitiveservices account show --name $AI_SERVICES --resource-group $RG --subscription $SUB --query id -o tsv)"
+
+pe "CURRENT_USER=\$(az ad signed-in-user show --query id -o tsv)"
+
+pe "az role assignment create --assignee \$CURRENT_USER --role 'Cognitive Services OpenAI User' --scope \$AI_SERVICES_ID"
+
+# ===================================
 p "# Criando o AI Foundry Hub — a camada de infraestrutura (RBAC, rede, Key Vault)"
 p "# Isso leva uns 3-5 minutos..."
 wait

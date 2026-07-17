@@ -10,6 +10,7 @@ Demo-magic scripts for an Azure AI Foundry portal walkthrough. Provisions the fu
 | Log Analytics | `law-foundry-demo` | Logs and metrics |
 | Application Insights | `appi-foundry-demo` | Request tracing, latency, errors |
 | AI Services | `ais-demo-lg` | Hosts model deployments (GPT-5 mini, etc.) |
+| RBAC Role Assignment | `Cognitive Services OpenAI User` | Grants current user permission to call models via Entra ID |
 | AI Foundry Hub | `hub-demo-lg` | Infrastructure layer (RBAC, networking) |
 | AI Foundry Project | `demo-lg-hrtech` | Workspace for deployments and playground |
 | GPT-5 mini Deployment | `gpt-5-mini-global` | Global Standard, 80K TPM |
@@ -56,7 +57,7 @@ To change other settings, edit the variables at the top of `demo.sh`:
 
 - Use `./demo.sh -d` to disable simulated typing (debug mode)
 - Adjust `TYPE_SPEED=40` for faster/slower typing
-- The REST test uses **Entra ID (Bearer token)** auth, not API keys. This works even when the Hub disables local auth (default behavior)
+- The REST test uses **Entra ID (bearer token)** auth, not API keys. The Hub disables local auth by default, so the script assigns `Cognitive Services OpenAI User` role to your user automatically. RBAC propagation takes ~1-2 minutes, which is covered by the Hub/Project creation time
 - If re-running after a previous demo, purge soft-deleted AI Services first:
   ```bash
   az cognitiveservices account purge --name ais-demo-lg --resource-group rg-foundry-demo --location eastus2
