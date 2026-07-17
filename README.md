@@ -56,6 +56,7 @@ To change other settings, edit the variables at the top of `demo.sh`:
 
 - Use `./demo.sh -d` to disable simulated typing (debug mode)
 - Adjust `TYPE_SPEED=40` for faster/slower typing
+- The REST test uses **Entra ID (Bearer token)** auth, not API keys. This works even when the Hub disables local auth (default behavior)
 - If re-running after a previous demo, purge soft-deleted AI Services first:
   ```bash
   az cognitiveservices account purge --name ais-demo-lg --resource-group rg-foundry-demo --location eastus2
