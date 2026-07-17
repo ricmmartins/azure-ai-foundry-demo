@@ -62,7 +62,7 @@ pe "az monitor app-insights component create --app $APP_INSIGHTS --location $LOC
 p "# Criando o AI Services — é o recurso que hospeda os modelos (GPT-5, etc.)"
 wait
 
-pe "az cognitiveservices account create --name $AI_SERVICES --resource-group $RG --kind AIServices --sku-name S0 --location $LOCATION --subscription $SUB --yes"
+pe "az cognitiveservices account create --name $AI_SERVICES --resource-group $RG --kind AIServices --sku-name S0 --location $LOCATION --subscription $SUB --custom-domain $AI_SERVICES --yes"
 
 # ===================================
 p "# Criando o AI Foundry Hub — a camada de infraestrutura (RBAC, rede, Key Vault)"
