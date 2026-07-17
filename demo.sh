@@ -101,7 +101,10 @@ pe "az cognitiveservices account deployment create --name $AI_SERVICES --resourc
 
 # ===================================
 p "# Vamos testar! Chamada REST direto no modelo, cenário de triagem de currículo"
+p "# Primeiro, habilitando API keys (o Hub desabilita por padrão para segurança)"
 wait
+
+pe "az cognitiveservices account update --name $AI_SERVICES --resource-group $RG --subscription $SUB --custom-domain $AI_SERVICES --api-properties '{\"disableLocalAuth\":false}'"
 
 pe "AI_ENDPOINT=\$(az cognitiveservices account show --name $AI_SERVICES --resource-group $RG --subscription $SUB --query properties.endpoint -o tsv)"
 
