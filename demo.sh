@@ -41,17 +41,29 @@ AI_SERVICES="ais-demo-lg"
 clear
 
 # ===================================
-p "# Primeiro, vamos criar o Resource Group onde tudo vai ficar organizado"
+p "# 1/11 — Resource Group onde tudo vai ficar organizado"
 wait
 pe "az group create --name $RG --location $LOCATION --subscription $SUB --tags team=foundry-demo"
 
 # ===================================
-p "# Agora o Log Analytics — é aqui que todos os logs e métricas vão parar"
+p "# 2/11 — RBAC: atribuir permissões ANTES de criar recursos"
+p "# Sem isso, Entra ID auth retorna PermissionDenied no teste REST"
+p "# Fazemos agora para dar tempo de propagar (~2 min) enquanto criamos o resto"
+wait
+
+pe "CURRENT_USER=\$(az ad signed-in-user show --query id -o tsv)"
+
+pe "RG_ID=\$(az group show --name $RG --subscription $SUB --query id -o tsv)"
+
+pe "az role assignment create --assignee \$CURRENT_USER --role 'Cognitive Services OpenAI Contributor' --scope \$RG_ID"
+
+# ===================================
+p "# 3/11 — Log Analytics: todos os logs e métricas centralizados"
 wait
 pe "az monitor log-analytics workspace create --resource-group $RG --workspace-name $LOG_ANALYTICS --location $LOCATION --subscription $SUB --retention-time 30"
 
 # ===================================
-p "# Application Insights conectado ao Log Analytics — rastreia requests, latência, erros"
+p "# 4/11 — Application Insights: rastreia requests, latência, erros"
 wait
 
 pe "LAW_ID=\$(az monitor log-analytics workspace show --resource-group $RG --workspace-name $LOG_ANALYTICS --subscription $SUB --query id -o tsv)"
@@ -59,25 +71,14 @@ pe "LAW_ID=\$(az monitor log-analytics workspace show --resource-group $RG --wor
 pe "az monitor app-insights component create --app $APP_INSIGHTS --location $LOCATION --resource-group $RG --subscription $SUB --workspace \$LAW_ID --kind web"
 
 # ===================================
-p "# Criando o AI Services — é o recurso que hospeda os modelos (GPT-5, etc.)"
+p "# 5/11 — AI Services: hospeda os modelos (GPT-5 mini, etc.)"
 wait
 
 pe "az cognitiveservices account create --name $AI_SERVICES --resource-group $RG --kind AIServices --sku-name S0 --location $LOCATION --subscription $SUB --custom-domain $AI_SERVICES --yes"
 
 # ===================================
-p "# Atribuindo RBAC — sem isso, Entra ID auth retorna PermissionDenied no teste REST"
-p "# O Hub desabilita API keys por padrão, então precisamos da role no AI Services"
-wait
-
-pe "AI_SERVICES_ID=\$(az cognitiveservices account show --name $AI_SERVICES --resource-group $RG --subscription $SUB --query id -o tsv)"
-
-pe "CURRENT_USER=\$(az ad signed-in-user show --query id -o tsv)"
-
-pe "az role assignment create --assignee \$CURRENT_USER --role 'Cognitive Services OpenAI User' --scope \$AI_SERVICES_ID"
-
-# ===================================
-p "# Criando o AI Foundry Hub — a camada de infraestrutura (RBAC, rede, Key Vault)"
-p "# Isso leva uns 3-5 minutos..."
+p "# 6/11 — AI Foundry Hub: infraestrutura (RBAC, rede, Key Vault)"
+p "# Isso leva uns 3-5 minutos... (o RBAC do passo 2 propaga nesse tempo)"
 wait
 
 pe "APPINSIGHTS_ID=\$(az monitor app-insights component show --app $APP_INSIGHTS --resource-group $RG --subscription $SUB --query id -o tsv)"
@@ -85,7 +86,7 @@ pe "APPINSIGHTS_ID=\$(az monitor app-insights component show --app $APP_INSIGHTS
 pe "az ml workspace create --kind hub --resource-group $RG --name $HUB_NAME --location $LOCATION --subscription $SUB --application-insights \$APPINSIGHTS_ID"
 
 # ===================================
-p "# Criando o Projeto dentro do Hub — é onde o time trabalha no dia a dia"
+p "# 7/11 — Projeto dentro do Hub: é onde o time trabalha no dia a dia"
 p "# Na prática vocês teriam projetos por caso de uso: triagem, avaliação, etc."
 wait
 
@@ -94,7 +95,7 @@ pe "HUB_ID=\$(az ml workspace show --name $HUB_NAME --resource-group $RG --subsc
 pe "az ml workspace create --kind project --resource-group $RG --name $PROJECT_NAME --hub-id \$HUB_ID --subscription $SUB"
 
 # ===================================
-p "# Habilitando Diagnostic Settings — sem isso vocês ficam cegos em produção"
+p "# 8/11 — Diagnostic Settings: sem isso vocês ficam cegos em produção"
 wait
 
 pe "LAW_ID=\$(az monitor log-analytics workspace show --resource-group $RG --workspace-name $LOG_ANALYTICS --subscription $SUB --query id -o tsv)"
@@ -104,15 +105,15 @@ pe "HUB_RESOURCE_ID=\$(az ml workspace show --name $HUB_NAME --resource-group $R
 pe "az monitor diagnostic-settings create --name foundry-diagnostics --resource \$HUB_RESOURCE_ID --workspace \$LAW_ID --logs '[{\"categoryGroup\":\"allLogs\",\"enabled\":true}]' --metrics '[{\"category\":\"AllMetrics\",\"enabled\":true}]'"
 
 # ===================================
-p "# Agora o deploy do GPT-5 mini — Global Standard, pay-per-token, 80K TPM"
+p "# 9/11 — Deploy do GPT-5 mini: Global Standard, pay-per-token, 80K TPM"
 p "# Para produção, vocês migrariam para PTU (Provisioned)"
 wait
 
 pe "az cognitiveservices account deployment create --name $AI_SERVICES --resource-group $RG --subscription $SUB --deployment-name gpt-5-mini-global --model-name gpt-5-mini --model-version 2025-08-07 --model-format OpenAI --sku-capacity 80 --sku-name GlobalStandard"
 
 # ===================================
-p "# Vamos testar! Chamada REST direto no modelo, cenário de triagem de currículo"
-p "# Usamos autenticação via Entra ID (Bearer token) — mais seguro que API keys"
+p "# 10/11 — Teste REST: chamada direto no modelo, cenário de triagem"
+p "# Auth via Entra ID (bearer token) — mais seguro que API keys"
 wait
 
 pe "AI_ENDPOINT=\$(az cognitiveservices account show --name $AI_SERVICES --resource-group $RG --subscription $SUB --query properties.endpoint -o tsv)"
@@ -122,15 +123,15 @@ pe "TOKEN=\$(az account get-access-token --resource https://cognitiveservices.az
 p "# Enviando prompt de triagem..."
 wait
 
-pe "curl -s \"\${AI_ENDPOINT}openai/deployments/gpt-5-mini-global/chat/completions?api-version=2024-10-21\" -H \"Content-Type: application/json\" -H \"Authorization: Bearer \$TOKEN\" -d '{\"messages\":[{\"role\":\"system\",\"content\":\"Você é um assistente de RH especializado em triagem de currículos.\"},{\"role\":\"user\",\"content\":\"Analise este perfil: João Silva, 5 anos exp Python/Django, AWS, inglês fluente. A vaga pede: 3+ anos Python, cloud, inglês. Ele é aderente?\"}],\"max_tokens\":300}' | python3 -m json.tool"
+pe "curl -s \"\${AI_ENDPOINT}openai/deployments/gpt-5-mini-global/chat/completions?api-version=2025-04-01-preview\" -H \"Content-Type: application/json\" -H \"Authorization: Bearer \$TOKEN\" -d '{\"messages\":[{\"role\":\"system\",\"content\":\"Você é um assistente de RH especializado em triagem de currículos.\"},{\"role\":\"user\",\"content\":\"Analise este perfil: João Silva, 5 anos exp Python/Django, AWS, inglês fluente. A vaga pede: 3+ anos Python, cloud, inglês. Ele é aderente?\"}],\"max_tokens\":300}' | python3 -m json.tool || (echo '⏳ RBAC ainda propagando, aguardando 30s...' && sleep 30 && curl -s \"\${AI_ENDPOINT}openai/deployments/gpt-5-mini-global/chat/completions?api-version=2025-04-01-preview\" -H \"Content-Type: application/json\" -H \"Authorization: Bearer \$(az account get-access-token --resource https://cognitiveservices.azure.com --query accessToken -o tsv)\" -d '{\"messages\":[{\"role\":\"system\",\"content\":\"Você é um assistente de RH especializado em triagem de currículos.\"},{\"role\":\"user\",\"content\":\"Analise este perfil: João Silva, 5 anos exp Python/Django, AWS, inglês fluente. A vaga pede: 3+ anos Python, cloud, inglês. Ele é aderente?\"}],\"max_tokens\":300}' | python3 -m json.tool)"
 
 # ===================================
-p "# Por último, consultando os logs via KQL — é isso que alimenta o monitoramento"
+p "# 11/11 — KQL: consultando logs — é isso que alimenta o monitoramento"
 wait
 
 pe "az monitor log-analytics query --workspace \$LAW_ID --analytics-query 'AzureDiagnostics | where ResourceProvider == \"MICROSOFT.COGNITIVESERVICES\" | project TimeGenerated, OperationName, DurationMs, ResultSignature | order by TimeGenerated desc | take 10' --timespan PT1H -o table 2>/dev/null || echo '(Logs podem levar alguns minutos para aparecer)'"
 
 # ===================================
 echo ""
-p "# Pronto! Agora vamos ver tudo isso no portal: https://ai.azure.com"
+p "# ✅ Pronto! Agora vamos ver tudo isso no portal: https://ai.azure.com"
 echo ""
