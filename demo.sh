@@ -101,19 +101,17 @@ pe "az cognitiveservices account deployment create --name $AI_SERVICES --resourc
 
 # ===================================
 p "# Vamos testar! Chamada REST direto no modelo, cenário de triagem de currículo"
-p "# Primeiro, habilitando API keys (o Hub desabilita por padrão para segurança)"
+p "# Usamos autenticação via Entra ID (Bearer token) — mais seguro que API keys"
 wait
-
-pe "az cognitiveservices account update --name $AI_SERVICES --resource-group $RG --subscription $SUB --custom-domain $AI_SERVICES --api-properties '{\"disableLocalAuth\":false}'"
 
 pe "AI_ENDPOINT=\$(az cognitiveservices account show --name $AI_SERVICES --resource-group $RG --subscription $SUB --query properties.endpoint -o tsv)"
 
-pe "AI_KEY=\$(az cognitiveservices account keys list --name $AI_SERVICES --resource-group $RG --subscription $SUB --query key1 -o tsv)"
+pe "TOKEN=\$(az account get-access-token --resource https://cognitiveservices.azure.com --query accessToken -o tsv)"
 
 p "# Enviando prompt de triagem..."
 wait
 
-pe "curl -s \"\${AI_ENDPOINT}openai/deployments/gpt-5-mini-global/chat/completions?api-version=2024-10-21\" -H \"Content-Type: application/json\" -H \"api-key: \$AI_KEY\" -d '{\"messages\":[{\"role\":\"system\",\"content\":\"Você é um assistente de RH especializado em triagem de currículos.\"},{\"role\":\"user\",\"content\":\"Analise este perfil: João Silva, 5 anos exp Python/Django, AWS, inglês fluente. A vaga pede: 3+ anos Python, cloud, inglês. Ele é aderente?\"}],\"max_tokens\":300}' | python3 -m json.tool"
+pe "curl -s \"\${AI_ENDPOINT}openai/deployments/gpt-5-mini-global/chat/completions?api-version=2024-10-21\" -H \"Content-Type: application/json\" -H \"Authorization: Bearer \$TOKEN\" -d '{\"messages\":[{\"role\":\"system\",\"content\":\"Você é um assistente de RH especializado em triagem de currículos.\"},{\"role\":\"user\",\"content\":\"Analise este perfil: João Silva, 5 anos exp Python/Django, AWS, inglês fluente. A vaga pede: 3+ anos Python, cloud, inglês. Ele é aderente?\"}],\"max_tokens\":300}' | python3 -m json.tool"
 
 # ===================================
 p "# Por último, consultando os logs via KQL — é isso que alimenta o monitoramento"
