@@ -9,6 +9,7 @@ Demo-magic scripts for an Azure AI Foundry portal walkthrough. Provisions the fu
 | Resource Group | `rg-foundry-demo` | Container for all resources |
 | Log Analytics | `law-foundry-demo` | Logs and metrics |
 | Application Insights | `appi-foundry-demo` | Request tracing, latency, errors |
+| AI Services | `ais-demo-lg` | Hosts model deployments (GPT-5 mini, etc.) |
 | AI Foundry Hub | `hub-demo-lg` | Infrastructure layer (RBAC, networking) |
 | AI Foundry Project | `demo-lg-hrtech` | Workspace for deployments and playground |
 | GPT-5 mini Deployment | `gpt-5-mini-global` | Global Standard, 80K TPM |
@@ -55,4 +56,7 @@ To change other settings, edit the variables at the top of `demo.sh`:
 
 - Use `./demo.sh -d` to disable simulated typing (debug mode)
 - Adjust `TYPE_SPEED=40` for faster/slower typing
-- The test prompt uses an HR scenario (resume screening)
+- If re-running after a previous demo, purge soft-deleted AI Services first:
+  ```bash
+  az cognitiveservices account purge --name ais-demo-lg --resource-group rg-foundry-demo --location eastus2
+  ```
