@@ -124,7 +124,7 @@ pe "TOKEN=$(az account get-access-token --resource https://cognitiveservices.azu
 p "# Enviando prompt de triagem..."
 wait
 
-pe "curl -s \"${AI_ENDPOINT}openai/deployments/gpt-5-mini-global/chat/completions?api-version=2025-04-01-preview\" -H \"Content-Type: application/json\" -H \"Authorization: Bearer $TOKEN\" -d '{\"messages\":[{\"role\":\"system\",\"content\":\"Você é um assistente de RH especializado em triagem de currículos.\"},{\"role\":\"user\",\"content\":\"Analise este perfil: João Silva, 5 anos exp Python/Django, AWS, inglês fluente. A vaga pede: 3+ anos Python, cloud, inglês. Ele é aderente?\"}],\"max_completion_tokens\":300}' | python3 -m json.tool"
+pe "curl -s \"${AI_ENDPOINT}openai/deployments/gpt-5-mini-global/chat/completions?api-version=2025-04-01-preview\" -H \"Content-Type: application/json\" -H \"Authorization: Bearer $TOKEN\" -d '{\"messages\":[{\"role\":\"system\",\"content\":\"Você é um assistente de RH especializado em triagem de currículos.\"},{\"role\":\"user\",\"content\":\"Analise este perfil: João Silva, 5 anos exp Python/Django, AWS, inglês fluente. A vaga pede: 3+ anos Python, cloud, inglês. Ele é aderente?\"}],\"max_completion_tokens\":1024}' | python3 -m json.tool"
 
 # ===================================
 p "# 11/11 — KQL: consultando logs — é isso que alimenta o monitoramento"
